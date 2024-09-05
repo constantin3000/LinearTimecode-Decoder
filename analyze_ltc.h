@@ -46,6 +46,7 @@ class AudioAnalyzeLTC : public AudioStream
   public:
     AudioAnalyzeLTC(void) : AudioStream(1, inputQueueArray) {
       new_output = false;
+      bitcounter = 0;
     }
 
     bool available(void) {
@@ -53,6 +54,13 @@ class AudioAnalyzeLTC : public AudioStream
       bool flag = new_output;
       __enable_irq();
       return flag;
+    }
+
+    void reset(){
+      bitcounter = 0;
+      ltc.data = 0;
+      ltc.sync = 0;
+      ltc.timestampfirstedge = 0;
     }
 
     ltcframe_t read(void) {
@@ -66,17 +74,20 @@ class AudioAnalyzeLTC : public AudioStream
 
     //Auxiliary functions:
 
-    int hour(ltcframe_t * ltc)   {
-      return 10 * ((int) (ltc->data >> 56) & 0x03)  + ((int) (ltc->data >> 48) & 0x0f);
+    uint16_t hour(ltcframe_t * ltc)   {
+      return 10 * ((uint16_t) (ltc->data >> 56) & 0x03)  + ((uint16_t) (ltc->data >> 48) & 0x0f);
     }
-    int minute(ltcframe_t * ltc) {
-      return 10 * ((int) (ltc->data >> 40) & 0x07)  + ((int) (ltc->data >> 32) & 0x0f);
+    uint16_t minute(ltcframe_t * ltc) {
+      return 10 * ((uint16_t) (ltc->data >> 40) & 0x07)  + ((uint16_t) (ltc->data >> 32) & 0x0f);
     }
-    int second(ltcframe_t * ltc) {
-      return 10 * ((int) (ltc->data >> 24) & 0x07)  + ((int) (ltc->data >> 16) & 0x0f);
+    uint16_t second(ltcframe_t * ltc) {
+      return 10 * ((uint16_t) (ltc->data >> 24) & 0x07)  + ((uint16_t) (ltc->data >> 16) & 0x0f);
     }
-    int frame(ltcframe_t * ltc)  {
-      return 10 * ((int) (ltc->data >>  8) & 0x03)  + ((int) (ltc->data >>  0) & 0x0f);
+    uint16_t frame(ltcframe_t * ltc)  {
+      return 10 * ((uint16_t) (ltc->data >>  8) & 0x03)  + ((uint16_t) (ltc->data >>  0) & 0x0f);
+    }
+    uint64_t frames(ltcframe_t* ltc, uint16_t framerate) {
+      return frame(ltc) + ((second(ltc) + ((minute(ltc) * 60)) + (hour(ltc) * 3600)) * framerate);
     }
     bool bit10(ltcframe_t * ltc) {
       return (int) (ltc->data >> 10) & 0x01;
@@ -110,7 +121,9 @@ class AudioAnalyzeLTC : public AudioStream
     audio_block_t *inputQueueArray[1];
     volatile bool new_output;
     int avsample;
+    int bitcounter;
     ltcframe_t ltcframe;
+    ltcframe_t ltc;
     inline void decodeBitstream(unsigned newbit);
 };
 

@@ -32,10 +32,10 @@
 #include "analyze_ltc.h"
 
 inline void AudioAnalyzeLTC::decodeBitstream(unsigned newbit) {
-  static ltcframe_t ltc;
-  static int bitcounter = 0;
+  // static ltcframe_t ltc;
   static bool forward = true;
   static uint32_t lastts = 0;
+  // static int bitcounter = 0;
   
   if (bitcounter < 64) {
 
